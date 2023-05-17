@@ -1,21 +1,22 @@
 import * as Earthstar from "https://deno.land/x/earthstar/mod.ts";
 import { join } from "https://deno.land/std/path/mod.ts";
 
-const SHARE_TO_SYNC =
-"+roeblog.abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzf";
-
-const SHARE_SECRET = "buaqth6jr5wkksnhdlpfi64cqcnjzfx3r6cssnfqdvitjmfygsk3q";
-
 const authorKeypair = await Earthstar.Crypto.generateAuthorKeypair("suzy");
+import shareKeypair from "./share.json" assert { type: "json" };
+
 
 if (Earthstar.isErr(authorKeypair)) {
 	console.error(authorKeypair);
 	Deno.exit(1);
 }
+if (Earthstar.isErr(shareKeypair)) {
+	console.error(shareKeypair);
+	Deno.exit(1);
+}
 
 const replica = new Earthstar.Replica({
-	driver: new Earthstar.ReplicaDriverMemory(SHARE_TO_SYNC),
-	shareSecret: SHARE_SECRET,
+	driver: new Earthstar.ReplicaDriverMemory(shareKeypair.shareAddress),
+	shareSecret: shareKeypair.secret,
 });
 
 
@@ -29,27 +30,26 @@ for await (const entry of Deno.readDir(POSTS_PATH)) {
   // 3. Read the contents of our file.
   const fileContents = await Deno.readTextFile(filePath);
   
+  console.log(entry.name.slice(0,-3));
+  
   // 4. Write them into our replica!
   await replica.set(authorKeypair, {
-    path: `/posts/${entry.name}`,
+    path: `/posts/${entry.name.slice(0,-3)}`,
     text: fileContents
   });
+  
 
 }  
 
 
-console.log(authorKeypair);
 
-
-const res = await replica.set(authorKeypair, {
+await replica.set(authorKeypair, {
 	path: "/test",
 	text: "Hello.",
 });
 
-console.log(res);
 
-
- await replica.getLatestDocAtPath("/test")
+await replica.getLatestDocAtPath("/test")
 
 
 

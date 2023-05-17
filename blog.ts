@@ -6,17 +6,16 @@ import { micromark } from "https://esm.sh/micromark";
 // =========================================================================
 
 // Setting up a Sqlite replica
-const MY_SHARE = "+roeblog.abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzf";
-const SHARE_SECRET = "buaqth6jr5wkksnhdlpfi64cqcnjzfx3r6cssnfqdvitjmfygsk3q";
+import shareKeypair from "./share.json" assert { type: "json" };
 
 
 // 2. Let's make a Sqlite replica driver.
-const driver = new Earthstar.ReplicaDriverFs(MY_SHARE, "./sqlite.db");
+const driver = new Earthstar.ReplicaDriverFs(shareKeypair.shareAddress, "./sqlite.db");
 
 // 3. Let's use that to build our replica! Again!
 const replica = new Earthstar.Replica({
   driver,
-  shareSecret: SHARE_SECRET,
+  shareSecret: shareKeypair.secret,
 });
 
 // 4. Let's put that replica into a Peer.
