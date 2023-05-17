@@ -1,25 +1,29 @@
-import * as Earthstar from "https://deno.land/x/earthstar@8.2.4/mod.ts";
-import { join } from "https://deno.land/std@0.133.0/path/mod.ts";
+import * as Earthstar from "https://deno.land/x/earthstar/mod.ts";
+import { join } from "https://deno.land/std/path/mod.ts";
 
 // Import the identity we made!
-import keypair from "./identity.json" assert { type: "json" };
 
+const authorKeypair = await Earthstar.Crypto.generateAuthorKeypair("suzy");
+
+if (Earthstar.isErr(authorKeypair)) {
+	console.error(authorKeypair);
+	Deno.exit(1);
+}
 // =========================================================================
 
 // Setting up a Replica
 
 // 1. Come up with a cool share name.
-const MY_SHARE = "+gwilzone.q7uhabux";
+const MY_SHARE = "+roeblog.abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzf";
 
 // 2. Let's make an in-memory replica driver.
 const driver = new Earthstar.ReplicaDriverMemory(MY_SHARE);
 
 // 3. Let's use that to build our replica!
-const replica = new Earthstar.Replica(
-  MY_SHARE,
-  Earthstar.FormatValidatorEs4,
-  driver,
-);
+const replica = new Earthstar.Replica({
+  shareSecret:  "buaqth6jr5wkksnhdlpfi64cqcnjzfx3r6cssnfqdvitjmfygsk3q",
+  driver
+});
 
 // =========================================================================
 
@@ -36,10 +40,9 @@ for await (const entry of Deno.readDir(POSTS_PATH)) {
   const fileContents = await Deno.readTextFile(filePath);
 
   // 4. Write them into our replica!
-  await replica.set(keypair, {
+  await replica.set(authorKeypair, {
     path: `/posts/${entry.name}`,
-    content: fileContents,
-    format: "es.4",
+    text: fileContents
   });
 }
 
@@ -54,6 +57,8 @@ const peer = new Earthstar.Peer();
 peer.addReplica(replica);
 
 // 3. Sync with the URL. Use ws! Don't forget pathname!
-peer.sync("ws://localhost:8080/earthstar-api/v2");
+const syncer = peer.sync("http://localhost:8080/earthstar-api/v2");
 
-console.log("Syncing with ws://localhost:8080/earthstar-api/v2");
+await syncer.isDone();
+
+console.log("Syncing is done with http://localhost:8080/earthstar-api/v2");
